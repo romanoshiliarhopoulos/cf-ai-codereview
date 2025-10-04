@@ -1,0 +1,32 @@
+{
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "name": "hello-ai",
+    "main": "src/index.ts",
+    "compatibility_date": "2025-10-04",
+    "observability": {
+        "enabled": true
+    },
+    
+    "ai": {
+        "binding": "AI"
+    },
+
+    /**
+     * Environment Variables
+     * These are non-sensitive values accessible in your worker.
+     * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
+     */
+    "vars": {
+        "GCP_PROJECT_ID": "ai-codeoverview"
+    }
+
+    /**
+     * Secrets
+     * Use secrets to store sensitive data like API keys or access tokens.
+     * To set the GCP_ACCESS_TOKEN secret, run the following command in your terminal:
+     * * wrangler secret put GCP_ACCESS_TOKEN
+     * * Wrangler will then prompt you to enter the secret value securely.
+     * This keeps your sensitive access token out of your configuration files.
+     * https://developers.cloudflare.com/workers/configuration/secrets/
+     */
+}
