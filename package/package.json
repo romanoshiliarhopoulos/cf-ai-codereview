@@ -1,0 +1,21 @@
+{
+  "name": "ai-codeoverview",
+  "version": "1.0.0",
+  "description": "This is a project of an npm package that integrates with github actions to create LLM generated code reviews on PRs and commits!",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "git repository" : "https://github.com/romanoshiliarhopoulos/cf-ai-codereview",
+  "keywords": ["codereview", "ai codereview", "github code review"],
+  "author": "Romanos Chiliarchopoulos",
+  "license": "ISC",
+  "bin": {
+    "cf-ai-codereview": "./cli.js" 
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.7",
+    "commander": "^11.0.0"
+  }
+
+}

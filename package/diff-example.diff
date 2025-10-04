@@ -1,0 +1,11 @@
+diff --git a/example.js b/example.js
+index e69de29..b6fc4c9 100644
+--- a/example.js
++++ b/example.js
+@@ -0,0 +1,6 @@
++function add(a, b) {
++  return a + b;
++}
++
++console.log(add(2, 3));
+
