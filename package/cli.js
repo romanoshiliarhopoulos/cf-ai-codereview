@@ -8,7 +8,6 @@ const { reviewCode } = require("./index");
 program
   .name("cf-ai-codereview")
   .description("Review your code diffs using Cloudflare Workers LLM")
-  .requiredOption("-w, --worker-url <url>", "Cloudflare Worker endpoint URL")
   .requiredOption("-f, --file <path>", "Path to diff file or code to review")
   .option("-p, --prompt <prompt>", "Optional LLM prompt to customize review")
   .option(
@@ -18,8 +17,15 @@ program
 
   .action(async (options) => {
     try {
+      const workerUrl = "https://hello-ai.romanoshiliarhopoulos.workers.dev";
+
       const diff = fs.readFileSync(options.file, "utf8");
-      const review = await reviewCode(diff, options.workerUrl, options.prompt);
+      const review = await reviewCode(
+        diff,
+        options.prompt,
+        options.source
+      );
+
       console.log("\n=== AI Code Review ===\n");
       console.log(review.overview);
       console.log(

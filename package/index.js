@@ -20,8 +20,9 @@ function* readAllFiles(dir) {
  * @param {string} [source] - Optional source for extra context
  * @returns {Promise<string>} Overview text from the LLM
  */
-async function reviewCode(diff, prompt, source = "") {
-  let workerUrl = "https://hello-ai.romanoshiliarhopoulos.workers.devz";
+async function reviewCode(diff, prompt, source) {
+  const workerUrl = "https://hello-ai.romanoshiliarhopoulos.workers.dev";
+
   if (!diff) throw new Error("Diff is required");
   if (!workerUrl) throw new Error("Worker URL is required");
 
@@ -30,9 +31,17 @@ async function reviewCode(diff, prompt, source = "") {
   }
 
   let context = "";
-  if (source != "") {
-    const files = Array.from(readAllFiles(source));
-    context = getFilesContent(files);
+  // Check if a source directory was provided and is not an empty string.
+  if (source && source.trim() !== "") {
+    try {
+      const files = Array.from(readAllFiles(source));
+      context = getFilesContent(files);
+    } catch (err) {
+      // Provide a more helpful error if the source directory is invalid.
+      throw new Error(
+        `Could not read source directory '${source}': ${err.message}`
+      );
+    }
   }
 
   const response = await fetch(workerUrl, {
@@ -41,12 +50,15 @@ async function reviewCode(diff, prompt, source = "") {
     body: JSON.stringify({
       code: diff,
       prompt:
-        prompt + " for additional content look at the repo files\n" + context,
+        (prompt || "") +
+        "\nFor additional context, here are the contents of the repository:\n" +
+        context,
     }),
   });
 
   if (!response.ok) {
-    throw new Error(`Error from worker: ${response.statusText}`);
+    const errorBody = await response.text();
+    throw new Error(`Error from worker: ${response.statusText} - ${errorBody}`);
   }
 
   const data = await response.json();
