@@ -102,6 +102,8 @@ The interface provides two tabs:
 - **Chatbot Tab:** Allows you to ask follow-up questions about the code review. The chatbot uses the review as its context, and the conversation history is saved to Firestore.
 
 ### Example Code overview response:
+
+Please feel free to check it out using the link: `https://ai-codeoverview.web.app?overviewId=1759682229684423` 
 ```
 === AI Code Review ===
 Let's review the code changes together.
