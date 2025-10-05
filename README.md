@@ -1,6 +1,6 @@
 # AI Code Overview
 
-AI Code Overview is a powerful tool designed to automate the process of generating code reviews and summaries using AI. It integrates seamlessly into both local development workflows and CI/CD pipelines like GitHub Actions, providing developers with concise, AI-powered insights into their code changes.
+AI Code Overview is a tool designed to automate the process of generating code reviews and summaries using AI. It integrates seamlessly into both local development workflows and CI/CD pipelines like GitHub Actions, providing developers with concise, AI-powered insights into their code changes.
 
 The system consists of a CLI tool, a Cloudflare Worker for AI processing, and a React-based web interface hosted on Firebase for viewing the generated overviews and interacting with a context-aware chatbot.
 
@@ -49,44 +49,44 @@ Automate code reviews for every commit pushed to your main branch by adding a wo
 Create a file at `.github/workflows/code-review.yml`:
 
 name: AI Code Review on Main Commits
-`
-on:
-push:
-branches:
 
-- main
+```
+ on:
+ push:
+ branches:
 
-jobs:
-ai-code-review:
-runs-on: ubuntu-latest
-steps:
-  - name: Checkout code
-    uses: actions/checkout@v4
-    with:
-      # Fetch the last 2 commits to be able to diff them
-      fetch-depth: 2
+ - main
 
-  - name: Set up Node.js
-    uses: actions/setup-node@v3
-    with:
-      node-version: "18"
+ jobs:
+ ai-code-review:
+ runs-on: ubuntu-latest
+ steps:
+ - name: Checkout code
+     uses: actions/checkout@v4
+     with:
+     # Fetch the last 2 commits to be able to diff them
+     fetch-depth: 2
 
-  - name: Install dependencies
-    run: npm install -g ai-codeoverview
+ - name: Set up Node.js
+     uses: actions/setup-node@v3
+     with:
+     node-version: "18"
 
-  - name: Generate code diff file
-    run: |
-      git diff HEAD^ HEAD > diff-example.diff
+ - name: Install dependencies
+     run: npm install -g ai-codeoverview
 
-  - name: Run AI code review CLI
-    run: |
-      # The CLI uses the worker URL configured during setup
-      cf-ai-codereview --file diff-example.diff --prompt "Review the following code changes:" --source "./pysrc"
+ - name: Generate code diff file
+     run: |
+     git diff HEAD^ HEAD > diff-example.diff
 
-  - name: Output review summary
-    run: echo "Code review completed!"
-`
+ - name: Run AI code review CLI
+     run: |
+     # The CLI uses the worker URL configured during setup
+     cf-ai-codereview --file diff-example.diff --prompt "Review the following code changes:" --source "./pysrc"
 
+ - name: Output review summary
+     run: echo "Code review completed!"
+```
 
 ## Viewing the Overview & Chatting
 
