@@ -16,12 +16,12 @@ function* readAllFiles(dir) {
 
 /**
  * @param {string} diff - The code diff string
- * @param {string} workerUrl - The Cloudflare Worker endpoint URL
  * @param {string} [prompt] - Optional LLM prompt to customize feedback
  * @param {string} [source] - Optional source for extra context
  * @returns {Promise<string>} Overview text from the LLM
  */
-async function reviewCode(diff, workerUrl, prompt, source = "") {
+async function reviewCode(diff, prompt, source = "") {
+  let workerUrl = "https://hello-ai.romanoshiliarhopoulos.workers.devz";
   if (!diff) throw new Error("Diff is required");
   if (!workerUrl) throw new Error("Worker URL is required");
 
@@ -29,10 +29,10 @@ async function reviewCode(diff, workerUrl, prompt, source = "") {
     return fileList.map((f) => fs.readFileSync(f, "utf-8")).join("\n\n");
   }
 
-  let context = ""
+  let context = "";
   if (source != "") {
-      const files = Array.from(readAllFiles(source));
-      context = getFilesContent(files);
+    const files = Array.from(readAllFiles(source));
+    context = getFilesContent(files);
   }
 
   const response = await fetch(workerUrl, {
@@ -52,7 +52,7 @@ async function reviewCode(diff, workerUrl, prompt, source = "") {
   const data = await response.json();
   return {
     overview: data.overview || "No review generated",
-    overview_id: data.overview_id || null, 
+    overview_id: data.overview_id || null,
   };
 }
 

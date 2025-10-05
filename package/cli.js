@@ -22,7 +22,12 @@ program
       const review = await reviewCode(diff, options.workerUrl, options.prompt);
       console.log("\n=== AI Code Review ===\n");
       console.log(review.overview);
-      console.log(review.overview_id);
+      console.log(
+        "\n=======PLEASE SEE MORE INFORMATION ABOUT YOUR CODE OVERVIEW ON THE LINK BELOW ==========="
+      );
+      console.log(
+        "https://ai-codeoverview.web.app?overviewId=" + review.overview_id
+      );
       process.exit(0);
     } catch (err) {
       console.error("Error:", err.message);
