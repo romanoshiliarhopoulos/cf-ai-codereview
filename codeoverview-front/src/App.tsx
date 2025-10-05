@@ -4,7 +4,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBTRgaAS9IpO7HFvQxtCN9vLaasw7JBahU", 
+  apiKey: "AIzaSyBTRgaAS9IpO7HFvQxtCN9vLaasw7JBahU",
   authDomain: "ai-codeoverview.firebaseapp.com",
   projectId: "ai-codeoverview",
   storageBucket: "ai-codeoverview.appspot.com",
@@ -310,7 +310,7 @@ const ChatbotContent = ({ overviewId }: { overviewId: string }) => {
   const [newMessage, setNewMessage] = useState("");
   const [isAiThinking, setIsAiThinking] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const workerUrl = "https://hello-ai.romanoshiliarhopoulos.workers.dev/";
+  const workerUrl = "https://chat-worker.romanoshiliarhopoulos.workers.dev";
 
   useEffect(() => {
     const fetchChatHistory = async () => {
