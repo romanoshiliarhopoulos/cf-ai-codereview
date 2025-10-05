@@ -1,136 +1,111 @@
-/**
- * Welcome to Cloudflare Workers!
- *
- * This worker receives code, generates an overview using Cloudflare's AI,
- * and then saves that overview to a Google Firestore database using the REST API.
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
-
-// Define the environment variables required by the worker.
-// You must set these as secrets in your wrangler.toml or the Cloudflare dashboard.
 export interface Env {
-  // Binding for Cloudflare's AI service.
   AI: Ai;
-  
-  // Your Google Cloud Project ID. Based on your config, this should be "ai-codeoverview".
-  GCP_PROJECT_ID: string;
+  FIREBASE_API_KEY: string; 
+  WORKER_EMAIL: string;     
+  WORKER_PASSWORD: string;  
+}
 
-  // IMPORTANT: This is NOT the `apiKey` from your web config.
-  // This is a short-lived access token generated from a Google Cloud Service Account.
-  // You need to create a service account with "Cloud Datastore User" role for Firestore access.
-  // Learn how to generate this token here: https://cloud.google.com/docs/authentication/get-oauth-access-token
-  GCP_ACCESS_TOKEN: string;
+async function getFirebaseToken(env: Env): Promise<string> {
+  console.log("FIREBASE API KEY: ", env.FIREBASE_API_KEY);
+  const authUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${env.FIREBASE_API_KEY}`;
+  
+  const authResponse = await fetch(authUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: env.WORKER_EMAIL,
+      password: env.WORKER_PASSWORD,
+      returnSecureToken: true,
+    }),
+  });
+
+  if (!authResponse.ok) {
+    const errorText = await authResponse.text();
+    throw new Error(`Firebase Auth failed: ${errorText}`);
+  }
+
+  const authData = await authResponse.json() as { idToken: string };
+  return authData.idToken;
 }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    // Handle CORS preflight requests for browser access
-    if (request.method === "OPTIONS") {
-      return handleOptions();
-    }
+    // Handle CORS preflight requests
+    if (request.method === "OPTIONS") { return handleOptions(request); }
 
     try {
       if (request.method !== "POST") {
-        return new Response("Only POST method is supported", { 
-          status: 405, 
-          headers: corsHeaders 
-        });
-      }
-
-      // Ensure the project ID and token are set
-      if (!env.GCP_PROJECT_ID || !env.GCP_ACCESS_TOKEN) {
-        throw new Error("GCP_PROJECT_ID and GCP_ACCESS_TOKEN environment variables must be set.");
+        return new Response("Only POST method is supported", { status: 405 });
       }
 
       const { code, prompt } = await request.json() as { code?: string; prompt?: string };
       if (!code) {
-        return new Response("Missing 'code' field in request body", { 
-          status: 400,
-          headers: corsHeaders 
-        });
+        return new Response("Missing 'code' field", { status: 400 });
       }
 
-      // 1. Generate the AI response for the code overview
       const aiPrompt = (prompt || "Provide a concise, accurate overview for this code:\n") + "\n" + code;
-      const aiResponse = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8", {
-        prompt: aiPrompt
-      });
+      const aiResponse = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8", { prompt: aiPrompt });
       const overviewText = aiResponse.response;
 
-      // 2. Prepare data for Firestore
-      // Generate a unique ID using the current timestamp and a random number
+      // Authenticate with Firebase to get an ID token
+      const firebaseIdToken = await getFirebaseToken(env);
+
+      // Prepare data and write to Firestore using the REST API with the new token
       const docId = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
-      console.log("DOCID", docId)
-
-      const isoTimestamp = new Date().toISOString();
-
+      const firestoreUrl = `https://firestore.googleapis.com/v1/projects/ai-codeoverview/databases/(default)/documents/codeoverviews?documentId=${docId}`;
+      
       const firestoreDocument = {
         fields: {
           overview_id: { stringValue: docId },
           text: { stringValue: overviewText },
-          timestamp: { timestampValue: isoTimestamp },
+          timestamp: { timestampValue: new Date().toISOString() },
         },
       };
 
-      // 3. Write the data to your Firestore collection using the REST API
-      const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${env.GCP_PROJECT_ID}/databases/(default)/documents/codeoverviews?documentId=${docId}`;
-      
       const firestoreResponse = await fetch(firestoreUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${env.GCP_ACCESS_TOKEN}`,
+          // Use the Firebase ID token for authorization
+          'Authorization': `Bearer ${firebaseIdToken}`,
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
         },
         body: JSON.stringify(firestoreDocument),
       });
 
       if (!firestoreResponse.ok) {
         const errorData = await firestoreResponse.text();
-        console.error("Firestore API Error:", errorData);
-        throw new Error(`Failed to write to Firestore. Status: ${firestoreResponse.status}`);
+        throw new Error(`Firestore write failed: ${errorData}`);
       }
 
-      console.log(firestoreResponse);
-      
-      // 4. Return both the ID and the overview text to the client
+      // Return the final response to the original client
       return new Response(
-        JSON.stringify({ 
-          overview_id: docId, 
-          overview: overviewText // This line sends the text
-        }),
-        { 
-          headers: { 
-            "Content-Type": "application/json",
-            ...corsHeaders
-          } 
-        }
+        JSON.stringify({ overview_id: docId, overview: overviewText }),
+        { headers: corsHeaders() }
       );
 
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "An unknown error occurred";
       console.error("Worker Error:", errorMessage);
-      return new Response(
-        JSON.stringify({ error: "Worker error", message: errorMessage }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: errorMessage }), { status: 500, headers: corsHeaders() });
     }
   }
 };
 
-// Define CORS headers to allow your web app to call this worker
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*", // Or lock down to your specific domain
+const corsHeaders = () => ({
+  "Content-Type": "application/json",
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+});
 
-// Function to handle CORS preflight (OPTIONS) requests
-function handleOptions() {
-  return new Response(null, {
-    status: 204, // No Content
-    headers: corsHeaders,
-  });
+function handleOptions(request: Request) {
+  if (
+    request.headers.get("Origin") !== null &&
+    request.headers.get("Access-Control-Request-Method") !== null &&
+    request.headers.get("Access-Control-Request-Headers") !== null
+  ) {
+    return new Response(null, { headers: corsHeaders() });
+  } else {
+    return new Response(null, { headers: { Allow: "POST, OPTIONS" } });
+  }
 }
-

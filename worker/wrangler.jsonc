@@ -17,7 +17,10 @@
      * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
      */
     "vars": {
-        "GCP_PROJECT_ID": "ai-codeoverview"
+        "GCP_PROJECT_ID": "ai-codeoverview",
+        "FIREBASE_API_KEY": "AIzaSyBTRgaAS9IpO7HFvQxtCN9vLaasw7JBahU",
+        "WORKER_EMAIL": "romanoshiliarhopoulos@gmail.com",
+        "WORKER_PASSWORD": "Roma7264!"
     }
 
     /**
